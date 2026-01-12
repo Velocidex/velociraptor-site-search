@@ -1,0 +1,19 @@
+3-8 : Highlight Hello
+136-141 : Highlight hello
+
+Fragment:
+*********
+
+# <mark>Hello</mark> in heading
+
+![No Hello in caption](http://no_ Hello _here)
+
+No `Hello` in backticks
+```yaml
+
+No Hello in code fences
+
+```
+
+But <mark>hello</mark> in paragraph. No &lt;Hello&gt; in HTML
+**********
