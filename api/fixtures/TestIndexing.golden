@@ -15,5 +15,5 @@ No Hello in code fences
 
 ```
 
-But <mark>hello</mark> in paragraph. No &lt;Hello&gt; in HTML
+But <mark>hello</mark> in paragraph. No `tools:` No &lt;Hello&gt; in HTML
 **********
