@@ -30,12 +30,12 @@ func TestIndexing(t *testing.T) {
 ` + "No `Hello` in backticks\n```yaml\n" + `
 No Hello in code fences
 
-` + "```\n\nBut hello in paragraph. No <Hello> in HTML"
+` + "```\n\nBut hello in paragraph. No `tools:` No <Hello> in HTML"
 
 	err = idx.Index("1", page)
 	assert.NoError(t, err)
 
-	resp, err := SearchPage(idx, "Hello", 0, 10)
+	resp, err := SearchPage(idx, "Hello tool", 0, 10)
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(resp.Hits), 1)

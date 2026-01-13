@@ -82,8 +82,7 @@ func TestNormalizeText(t *testing.T) {
 		in: `or [VQL functions]({{< ref
 "/vql_reference/" >}}).
 `,
-		expected: `or [VQL functions](https://docs.velociraptor.app/vql_reference/).
-`,
+		expected: `or [VQL functions](https://docs.velociraptor.app/vql_reference/).`,
 	}, {
 		in:       `![image caption](image.png)`,
 		expected: `![image caption](https://docs.velociraptor.app/foo/image.png)`,
@@ -127,8 +126,7 @@ of the launching user](https://docs.velociraptor.app/docs/artifacts/security/ser
 			path = "../velociraptor-docs/content/foo.md"
 		}
 
-		assert.Equal(t, tc.expected,
-			NormalizeText(path, tc.in))
+		assert.Equal(t, tc.expected, NormalizeText(path, tc.in))
 	}
 }
 

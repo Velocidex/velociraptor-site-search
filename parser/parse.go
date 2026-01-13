@@ -38,7 +38,7 @@ func (self *TagMap) Match(components []string) bool {
 
 var (
 	// Handle split lines and ref/relref
-	refRegex = regexp.MustCompile(`(?ms){{<\s+(?:ref|relref)\s+"([^"]+)"\s+>}}`)
+	refRegex = regexp.MustCompile(`(?ms){{<\s*(?:ref|relref)\s+"([^"]+)"\s*>}}`)
 
 	noticeRegex = regexp.MustCompile(`{{% +notice +([a-z]+) +("[^"]+")? *%}}`)
 
@@ -131,7 +131,7 @@ func NormalizeText(path, in string) string {
 
 	in = replace(in)
 
-	return in
+	return strings.TrimSpace(in)
 }
 
 func replace(in string) string {

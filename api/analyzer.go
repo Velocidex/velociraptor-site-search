@@ -19,11 +19,11 @@ var (
 		// Markdown link: [text in link](http://www.example.com)
 		regexp.MustCompile(`(?sm)\[[^\]]*\]\([^\(]+\)`),
 
-		// Backtick: `Special Term`
-		regexp.MustCompile("`[^`]+`"),
-
 		// Remove from code block
 		regexp.MustCompile("(?sm)^```[^`]+```\n"),
+
+		// Backtick: `Special Term`
+		regexp.MustCompile("`[^`]+`"),
 
 		// Remove HTML tags from indexing
 		regexp.MustCompile("(?sm)<[^>]+>"),

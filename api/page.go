@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -45,17 +44,24 @@ func (self *Page) ParsePageFromFile(path string) error {
 		return err
 	}
 
-	if self.Draft {
-		self.Rank = 0
-		return nil
-	}
-
 	m := preambleRegex.FindStringSubmatch(string(data))
 	if len(m) > 0 {
 		yaml.Unmarshal([]byte(m[1]), self)
 		self.Text = parser.NormalizeText(path, m[2])
 	} else {
 		self.Text = parser.NormalizeText(path, string(data))
+	}
+
+	if self.Draft {
+		self.Rank = 0
+		self.Text = ""
+		return nil
+	}
+
+	// Ignore empty pages
+	if self.Text == "" {
+		self.Rank = 0
+		return nil
 	}
 
 	self.Url = parser.CalculateURLFromPath(path)
@@ -66,7 +72,7 @@ func (self *Page) ParsePageFromFile(path string) error {
 	self.Tags = append(tags, self.Tags...)
 	self.Type = "page"
 
-	fmt.Printf("Url: %#v\nTags: %v\n", self.Url, self.Tags)
+	//fmt.Printf("Url: %#v\nTags: %v\n", self.Url, self.Tags)
 
 	return nil
 }
