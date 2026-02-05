@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Velocidex/velociraptor-site-search/api"
 	"github.com/alecthomas/assert"
 )
 
@@ -101,10 +102,13 @@ func TestNormalizeText(t *testing.T) {
 		expected: `<img src="https://docs.velociraptor.app/foo/image.png">`,
 	}, {
 		in:       `{{% notice note "This is important" %}}`,
-		expected: `### note: This is important`,
+		expected: `<velo-admonition adtype="note" caption="This is important">`,
 	}, {
 		in:       `{{% notice note %}}`,
-		expected: `### note`,
+		expected: `<velo-admonition adtype="note">`,
+	}, {
+		in:       `{{% /notice %}}`,
+		expected: "</velo-admonition>",
 	}, {
 		in:       `{{% carousel %}}`,
 		expected: ``,
@@ -120,6 +124,19 @@ of the launching user](https://docs.velociraptor.app/docs/artifacts/security/ser
 		in:       `[Step 1: Download the Velociraptor binaries](#step-1-download-the-velociraptor-binaries)`,
 		expected: `[Step 1: Download the Velociraptor binaries](https://docs.velociraptor.app/docs/artifacts/security/#step-1-download-the-velociraptor-binaries)`,
 		path:     "../velociraptor-docs/content/docs/artifacts/security/_index.md",
+	}, {
+		in: `<!-- This is a comment
+
+with several lines
+ -->`,
+		expected: "",
+	}, {
+		in: `
+<!--
+See this [blog post]({{< ref "/blog/html/2019/03/02/agentless_hunting_with_velociraptor.html" >}}) for details of how to deploy Velociraptor in agentless mode.
+-->
+`,
+		expected: "",
 	}} {
 		path := tc.path
 		if path == "" {
@@ -160,5 +177,39 @@ func TestGetTags(t *testing.T) {
 	}} {
 		tags, _ := GetTags(tc.in, "")
 		assert.Equal(t, tc.expected, strings.Join(tags, ","))
+	}
+}
+
+func TestBreadcrumbs(t *testing.T) {
+	for _, tc := range []struct {
+		in       string
+		expected []api.BreadCrumb
+	}{{
+		in: "../velociraptor-docs/content/docs/troubleshooting/debugging/internals/go_profile/foo.md",
+		expected: []api.BreadCrumb{
+			{
+				Url:  "https://docs.velociraptor.app/docs/",
+				Name: "Docs",
+			},
+			{
+				Url:  "https://docs.velociraptor.app/docs/troubleshooting/",
+				Name: "Troubleshooting",
+			},
+			{
+				Url:  "https://docs.velociraptor.app/docs/troubleshooting/debugging/",
+				Name: "Debugging",
+			},
+			{
+				Url:  "https://docs.velociraptor.app/docs/troubleshooting/debugging/internals/",
+				Name: "Internals",
+			},
+			{
+				Url:  "https://docs.velociraptor.app/docs/troubleshooting/debugging/internals/go_profile/",
+				Name: "Go Profile",
+			},
+		},
+	}} {
+		tags := GetBreadCrumbs(tc.in)
+		assert.Equal(t, tc.expected, tags)
 	}
 }

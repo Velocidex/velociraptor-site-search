@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Velocidex/velociraptor-site-search/api"
+	"github.com/Velocidex/velociraptor-site-search/parser"
 	"github.com/alecthomas/kingpin"
 	"github.com/goccy/go-yaml"
 )
@@ -18,8 +18,7 @@ var (
 )
 
 func doParse() {
-	page := &api.Page{}
-	err := page.ParsePageFromFile(*parse_command_path)
+	page, err := parser.ParsePageFromFile(*parse_command_path)
 	kingpin.FatalIfError(err, "ParsePageFromFile")
 
 	serialized, err := yaml.Marshal(page)

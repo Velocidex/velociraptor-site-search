@@ -40,7 +40,8 @@ var (
 	// Handle split lines and ref/relref
 	refRegex = regexp.MustCompile(`(?ms){{<\s*(?:ref|relref)\s+"([^"]+)"\s*>}}`)
 
-	noticeRegex = regexp.MustCompile(`{{% +notice +([a-z]+) +("[^"]+")? *%}}`)
+	noticeRegex      = regexp.MustCompile(`{{% +notice +([a-z]+) +("[^"]+")? *%}}`)
+	noticeCloseRegex = regexp.MustCompile(`{{% */notice *%}}`)
 
 	// Markdown img tag (handle split lines)
 	imgRegex = regexp.MustCompile(`(?ms)(\!?\[[^]]*\]\()([^\)]+)\)`)
@@ -65,6 +66,10 @@ var (
 		}, {
 			in:  "```vql",
 			out: "```sql",
+		}, {
+			// Remove HTML Comments
+			in:  "(?sm)<!--.+?-->",
+			out: "",
 		},
 	}
 
@@ -124,9 +129,15 @@ func NormalizeText(path, in string) string {
 	in = noticeRegex.ReplaceAllStringFunc(in, func(in string) string {
 		m := noticeRegex.FindStringSubmatch(in)
 		if m[2] == "" {
-			return fmt.Sprintf("### %s", strings.Trim(m[1], `"`))
+			return fmt.Sprintf(`<velo-admonition adtype="%s">`, strings.Trim(m[1], `"`))
 		}
-		return fmt.Sprintf("### %s: %s", m[1], strings.Trim(m[2], `"`))
+		return fmt.Sprintf(`<velo-admonition adtype="%s" caption="%s">`,
+			strings.Trim(m[1], `"`),
+			strings.Trim(m[2], `"`))
+	})
+
+	in = noticeCloseRegex.ReplaceAllStringFunc(in, func(in string) string {
+		return "</velo-admonition>"
 	})
 
 	in = replace(in)
@@ -149,10 +160,6 @@ func replace(in string) string {
 // Given a possibly relative link and a page path, calculate a fully
 // qualified URL to access the source.
 func CalculateURL(page_path, in string) string {
-	if strings.Contains(in, "#") {
-		DlvBreak()
-	}
-
 	// External URL
 	if strings.HasPrefix(in, "http") {
 		return in

@@ -16,9 +16,12 @@ func BuildIndexMapping() (mapping.IndexMapping, error) {
 	englishTextFieldMapping := bleve.NewTextFieldMapping()
 	englishTextFieldMapping.Analyzer = "markdown"
 
+	disabledMapping := bleve.NewDocumentDisabledMapping()
+
 	pageMapping := bleve.NewDocumentMapping()
 	pageMapping.AddFieldMappingsAt("text", englishTextFieldMapping)
 	pageMapping.AddFieldMappingsAt("title", englishTextFieldMapping)
+	pageMapping.AddSubDocumentMapping("crumb", disabledMapping)
 
 	indexMapping := bleve.NewIndexMapping()
 	indexMapping.AddDocumentMapping("page", pageMapping)
