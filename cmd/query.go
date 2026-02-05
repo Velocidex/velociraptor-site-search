@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/Velocidex/velociraptor-site-search/api"
@@ -27,13 +28,16 @@ func doQuery() {
 
 	query := bleve.NewQueryStringQuery(*query_command_query)
 	searchRequest := bleve.NewSearchRequest(query)
-	searchRequest.Fields = []string{"title", "Text", "menutitle", "Path"}
+	searchRequest.Fields = []string{"title", "text", "url", "tags", "rank", "crumbs"}
 	searchRequest.Highlight = bleve.NewHighlight()
 
 	searchResult, err := index.Search(searchRequest)
 	kingpin.FatalIfError(err, "Searching")
 
-	fmt.Printf("%#v\n", searchResult)
+	serialized, err := json.MarshalIndent(searchResult, " ", " ")
+	kingpin.FatalIfError(err, "Marshal")
+
+	fmt.Println(string(serialized))
 }
 
 func init() {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Velocidex/velociraptor-site-search/api"
+	"github.com/Velocidex/velociraptor-site-search/parser"
 	"github.com/alecthomas/kingpin"
 )
 
@@ -37,8 +38,7 @@ func doBuild() {
 				return nil
 			}
 
-			page := api.NewPage()
-			err = page.ParsePageFromFile(path)
+			page, err := parser.ParsePageFromFile(path)
 			if err != nil {
 				return err
 			}

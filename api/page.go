@@ -2,79 +2,23 @@ package api
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
-	"regexp"
-
-	"github.com/Velocidex/velociraptor-site-search/parser"
-	"github.com/goccy/go-yaml"
 )
 
-var (
-	preambleRegex = regexp.MustCompile("(?ms)^---\n(.+?)\n---\n(.+)$")
-)
-
-type Page struct {
-	Title     string   `json:"title"`
-	Menutitle string   `json:"menutitle"`
-	Url       string   `json:"url"`
-	Text      string   `json:"text"`
-	Tags      []string `json:"tags"`
-	Rank      int      `json:"rank"`
-	Type      string   `json:"type"`
-	Draft     bool     `json:"draft"`
+type BreadCrumb struct {
+	Url  string `json:"url"`
+	Name string `json:"name"`
 }
 
-func (self *Page) ParsePageFromFile(path string) error {
-	var tags []string
-	tags, self.Rank = parser.GetTags(path, self.Text)
-
-	// We skip unranked pages.
-	if self.Rank == 0 {
-		return nil
-	}
-
-	fd, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-
-	data, err := ioutil.ReadAll(fd)
-	if err != nil {
-		return err
-	}
-
-	m := preambleRegex.FindStringSubmatch(string(data))
-	if len(m) > 0 {
-		yaml.Unmarshal([]byte(m[1]), self)
-		self.Text = parser.NormalizeText(path, m[2])
-	} else {
-		self.Text = parser.NormalizeText(path, string(data))
-	}
-
-	if self.Draft {
-		self.Rank = 0
-		self.Text = ""
-		return nil
-	}
-
-	// Ignore empty pages
-	if self.Text == "" {
-		self.Rank = 0
-		return nil
-	}
-
-	self.Url = parser.CalculateURLFromPath(path)
-	if self.Title == "" {
-		self.Title = self.Menutitle
-	}
-	self.Menutitle = ""
-	self.Tags = append(tags, self.Tags...)
-	self.Type = "page"
-
-	//fmt.Printf("Url: %#v\nTags: %v\n", self.Url, self.Tags)
-
-	return nil
+type Page struct {
+	Title       string   `json:"title"`
+	Menutitle   string   `json:"menutitle"`
+	Url         string   `json:"url"`
+	Text        string   `json:"text"`
+	Tags        []string `json:"tags"`
+	BreadCrumbs string   `json:"crumbs"`
+	Rank        int      `json:"rank"`
+	Type        string   `json:"type"`
+	Draft       bool     `json:"draft"`
 }
 
 func NewPage() *Page {
