@@ -1,6 +1,6 @@
 package api
 
-import "github.com/blevesearch/bleve"
+import "github.com/blevesearch/bleve/v2"
 
 func SearchPage(index Index, query_str string, start, len int) (
 	*bleve.SearchResult, error) {
