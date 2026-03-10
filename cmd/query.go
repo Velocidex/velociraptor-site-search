@@ -6,7 +6,7 @@ import (
 
 	"github.com/Velocidex/velociraptor-site-search/api"
 	"github.com/alecthomas/kingpin"
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
 )
 
 var (
