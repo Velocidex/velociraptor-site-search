@@ -16,7 +16,10 @@ func TestIndexing(t *testing.T) {
 
 	defer os.RemoveAll(dir)
 
-	idx, err := NewIndex(dir)
+	analyzer, err := BuildIndexMapping()
+	assert.NoError(t, err)
+
+	idx, err := NewIndex(dir, analyzer)
 	assert.NoError(t, err)
 
 	page := NewPage()

@@ -2,7 +2,7 @@ package api
 
 import "github.com/blevesearch/bleve/v2"
 
-func SearchPage(index Index, query_str string, start, len int) (
+func SearchPage(index *Index, query_str string, start, len int) (
 	*bleve.SearchResult, error) {
 	query := bleve.NewQueryStringQuery(query_str)
 	searchRequest := bleve.NewSearchRequest(query)

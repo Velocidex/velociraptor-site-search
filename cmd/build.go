@@ -25,7 +25,10 @@ var (
 )
 
 func doBuild() {
-	index, err := api.NewIndex(*build_command_output)
+	analyzer, err := api.BuildIndexMapping()
+	kingpin.FatalIfError(err, "Creating index")
+
+	index, err := api.NewIndex(*build_command_output, analyzer)
 	kingpin.FatalIfError(err, "Creating index")
 
 	err = filepath.Walk(*build_command_path,
