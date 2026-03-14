@@ -25,6 +25,16 @@ type IndexCache struct {
 	houseKeepPeriod time.Duration
 }
 
+func (self *IndexCache) Purge() {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	for _, idx := range self.cache {
+		idx.Purge()
+	}
+	self.cache = make(map[string]*Index)
+}
+
 func (self *IndexCache) Close() {
 	self.cancel()
 }
@@ -114,4 +124,9 @@ func NewIndexCache(period time.Duration) *IndexCache {
 		houseKeepPeriod: period,
 	}
 	return res
+}
+
+// Force the cache to purge immediately. Only used rarely.
+func PurgeCache() {
+	cache.Purge()
 }
