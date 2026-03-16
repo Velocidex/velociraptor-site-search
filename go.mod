@@ -3,6 +3,7 @@ module github.com/Velocidex/velociraptor-site-search
 go 1.25.3
 
 require (
+	github.com/Velocidex/ordereddict v0.0.0-20250821063524-02dc06e46238
 	github.com/alecthomas/assert v1.0.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/blevesearch/bleve/v2 v2.5.7
@@ -12,6 +13,8 @@ require (
 
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.4.5 // indirect
+	github.com/Velocidex/json v0.0.0-20220224052537-92f3c0326e5a // indirect
+	github.com/Velocidex/yaml/v2 v2.2.8 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.1.1 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect

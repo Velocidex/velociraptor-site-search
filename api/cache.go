@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -25,25 +24,29 @@ type IndexCache struct {
 	houseKeepPeriod time.Duration
 }
 
-func (self *IndexCache) Purge() {
+func (self *IndexCache) Purge() error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
-	for _, idx := range self.cache {
-		idx.Purge()
+	for k, idx := range self.cache {
+		err := idx.Purge()
+		if err != nil {
+			return err
+		}
+		delete(self.cache, k)
 	}
-	self.cache = make(map[string]*Index)
+	return nil
 }
 
 func (self *IndexCache) Close() {
 	self.cancel()
 }
 
-func (self *IndexCache) removeIdx(path string) {
+func (self *IndexCache) removeIdx(key string) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
-	delete(self.cache, self.getKeyFromPath(path))
+	delete(self.cache, key)
 }
 
 func (self *IndexCache) getKeyFromPath(path string) string {
@@ -53,15 +56,23 @@ func (self *IndexCache) getKeyFromPath(path string) string {
 }
 
 func (self *IndexCache) newIndex(
-	idx bleve.Index, path string) *Index {
+	idx bleve.Index, key, path string) *Index {
+
+	now := time.Now()
 	res := &Index{
 		path:      path,
+		key:       key,
 		idx:       idx,
 		owner:     self,
-		last_used: time.Now(),
-		refs:      1,
+		open_time: now,
+		last_used: now,
+
+		// Start off with one user.
+		refs: 1,
 	}
 
+	// Keep checking if we can close this index - after sufficient
+	// inactivity.
 	go res.HouseKeep(self.ctx, self.houseKeepPeriod)
 	return res
 }
@@ -71,19 +82,20 @@ func (self *IndexCache) OpenIndex(path string) (*Index, error) {
 	defer self.mu.Unlock()
 
 	key := self.getKeyFromPath(path)
-	fmt.Printf("Path %v key %v\n", path, key)
 	existing, pres := self.cache[key]
 	if pres {
 		existing.IncRef()
 		return existing, nil
 	}
 
-	res_idx, err := bleve.Open(path)
+	opts := make(map[string]interface{})
+	opts["bolt_timeout"] = "10s"
+	res_idx, err := bleve.OpenUsing(path, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	res := self.newIndex(res_idx, res_idx.Name())
+	res := self.newIndex(res_idx, key, res_idx.Name())
 	self.cache[key] = res
 	return res, nil
 
@@ -108,7 +120,7 @@ func (self *IndexCache) NewIndex(
 		return nil, err
 	}
 
-	res := self.newIndex(res_idx, res_idx.Name())
+	res := self.newIndex(res_idx, key, res_idx.Name())
 	self.cache[key] = res
 	return res, nil
 
@@ -127,6 +139,6 @@ func NewIndexCache(period time.Duration) *IndexCache {
 }
 
 // Force the cache to purge immediately. Only used rarely.
-func PurgeCache() {
-	cache.Purge()
+func PurgeCache() error {
+	return cache.Purge()
 }

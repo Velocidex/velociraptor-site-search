@@ -2,10 +2,13 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
+	"github.com/Velocidex/ordereddict"
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/analysis/analyzer/custom"
 	"github.com/blevesearch/bleve/v2/analysis/lang/en"
@@ -15,20 +18,43 @@ import (
 	"github.com/blevesearch/bleve/v2/mapping"
 )
 
+var (
+	alreadyClosedErorr = errors.New("Index Already closed")
+)
+
 type Index struct {
 	idx bleve.Index
 
 	mu        sync.Mutex
 	path      string
+	key       string
+	open_time time.Time
 	last_used time.Time
 	refs      int
+
+	house_keep_cancel func()
+
+	// Mark this index as already closed. This will ensure we dont
+	// close it multiple times.
+	closed bool
 
 	owner *IndexCache
 }
 
 // Force close of the underlying index - rarely happens.
-func (self *Index) Purge() {
-	self.idx.Close()
+func (self *Index) Purge() error {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	if !self.closed {
+		err := self.idx.Close()
+		if err != nil {
+			return fmt.Errorf("While closing %v: %w",
+				self.idx.Name(), err)
+		}
+		self.closed = true
+	}
+	return nil
 }
 
 func (self *Index) houseKeepOnce(period time.Duration) {
@@ -42,19 +68,34 @@ func (self *Index) houseKeepOnce(period time.Duration) {
 
 	expired := time.Now().Add(-period)
 	if self.last_used.Before(expired) {
-		// Remove ourselves from the cache
-		self.owner.removeIdx(self.path)
+		// Close the underlying index if needed.
+		if !self.closed {
+			err := self.idx.Close()
+			if err != nil {
+				fmt.Printf("While closing %v: %v", self.idx.Name(), err)
+				return
+			}
 
-		// Close the underlying index
-		self.idx.Close()
+			self.closed = true
+
+			// Remove ourselves from the cache
+			self.owner.removeIdx(self.key)
+
+			// Stop the housekeep loop
+			self.house_keep_cancel()
+		}
 	}
 }
 
 func (self *Index) HouseKeep(
 	ctx context.Context, period time.Duration) {
+
+	sub_ctx, cancel := context.WithCancel(ctx)
+	self.house_keep_cancel = cancel
+
 	for {
 		select {
-		case <-ctx.Done():
+		case <-sub_ctx.Done():
 			return
 
 		case <-time.After(period):
@@ -65,14 +106,44 @@ func (self *Index) HouseKeep(
 }
 
 func (self *Index) Index(id string, data interface{}) error {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	if self.closed {
+		return alreadyClosedErorr
+	}
+
+	self.last_used = time.Now()
+
 	return self.idx.Index(id, data)
 }
 
 func (self *Index) Fields() ([]string, error) {
-	return self.idx.Fields()
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	if self.closed {
+		return nil, alreadyClosedErorr
+	}
+
+	res, err := self.idx.Fields()
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Strings(res)
+	return res, nil
 }
 
 func (self *Index) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	if self.closed {
+		return nil, alreadyClosedErorr
+	}
+
+	self.last_used = time.Now()
 	return self.idx.Search(req)
 }
 
@@ -82,6 +153,40 @@ func (self *Index) IncRef() {
 
 	self.refs++
 	self.last_used = time.Now()
+}
+
+func (self *Index) Stats() IndexStat {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	doc_count, _ := self.idx.DocCount()
+	fields, _ := self.idx.Fields()
+	sort.Strings(fields)
+
+	now := time.Now()
+
+	// This contains too much info for us.
+	s := self.idx.StatsMap()
+	item := ordereddict.NewDict()
+	index_stats := s["index"]
+	if index_stats != nil {
+		idx_map, ok := index_stats.(map[string]interface{})
+		if ok {
+			item.Set("CurOnDiskBytes", idx_map["CurOnDiskBytes"])
+		}
+	}
+	item.Set("Searches", s["searches"])
+	item.Set("SearchTime", s["search_time"])
+
+	return IndexStat{
+		Path:        self.idx.Name(),
+		Fields:      fields,
+		Stats:       item,
+		DocCount:    doc_count,
+		LastUsedAgo: now.Sub(self.last_used).Round(time.Second).String(),
+		OpenedAgo:   now.Sub(self.open_time).Round(time.Second).String(),
+		RefCount:    self.refs,
+	}
 }
 
 func (self *Index) Close() {
@@ -140,7 +245,5 @@ func NewIndex(path string, mapping mapping.IndexMapping) (*Index, error) {
 }
 
 func OpenIndex(path string) (*Index, error) {
-	fmt.Printf("OpenIndex %v\n", path)
-
 	return cache.OpenIndex(path)
 }

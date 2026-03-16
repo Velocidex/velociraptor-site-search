@@ -2,15 +2,17 @@ package api
 
 import (
 	"sort"
-	"time"
+
+	"github.com/Velocidex/ordereddict"
 )
 
 type IndexStat struct {
 	Path        string
 	Fields      []string
-	Stats       map[string]interface{}
+	Stats       *ordereddict.Dict
 	DocCount    uint64
 	LastUsedAgo string
+	OpenedAgo   string
 	RefCount    int
 }
 
@@ -22,21 +24,8 @@ func (self *IndexCache) GetStats() (res []IndexStat) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
-	now := time.Now()
-
-	for _, k := range self.cache {
-		k.mu.Lock()
-		item := IndexStat{
-			Path:        k.idx.Name(),
-			Stats:       k.idx.StatsMap(),
-			LastUsedAgo: now.Sub(k.last_used).Round(time.Second).String(),
-			RefCount:    k.refs,
-		}
-		item.DocCount, _ = k.idx.DocCount()
-		item.Fields, _ = k.Fields()
-		k.mu.Unlock()
-
-		res = append(res, item)
+	for _, item := range self.cache {
+		res = append(res, item.Stats())
 	}
 
 	sort.Slice(res, func(i, j int) bool {
