@@ -41,6 +41,23 @@ type Index struct {
 	owner *IndexCache
 }
 
+func (self *Index) NewBatch() *bleve.Batch {
+	return self.idx.NewBatch()
+}
+
+func (self *Index) Batch(b *bleve.Batch) error {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	if self.closed {
+		return alreadyClosedErorr
+	}
+
+	self.last_used = time.Now()
+
+	return self.idx.Batch(b)
+}
+
 // Force close of the underlying index - rarely happens.
 func (self *Index) Purge() error {
 	self.mu.Lock()
