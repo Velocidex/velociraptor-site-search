@@ -72,7 +72,7 @@ func (self *Index) houseKeepOnce(period time.Duration) {
 		if !self.closed {
 			err := self.idx.Close()
 			if err != nil {
-				fmt.Printf("While closing %v: %w", self.idx.Name(), err)
+				fmt.Printf("While closing %v: %v", self.idx.Name(), err)
 				return
 			}
 
