@@ -9,6 +9,7 @@ require (
 	github.com/blevesearch/bleve/v2 v2.5.7
 	github.com/goccy/go-yaml v1.19.2
 	github.com/sebdah/goldie v1.0.0
+	golang.org/x/crypto v0.49.0
 )
 
 require (
@@ -44,6 +45,8 @@ require (
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
